@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/choffmeister/git-describe-semver/internal"
 	"github.com/go-git/go-git/v5"
+	"github.com/willabides/git-describe-semver/internal"
 )
 
 func run(dir string, opts internal.GenerateVersionOptions) (*string, error) {

@@ -1,0 +1,59 @@
+cache: bin/.bindown
+systems:
+- darwin/amd64
+- darwin/arm64
+- linux/amd64
+- windows/amd64
+dependencies:
+  goreleaser:
+    template: https://raw.githubusercontent.com/WillAbides/bindown-templates/main/bindown.yml#goreleaser
+    vars:
+      version: 1.18.2
+templates:
+  https://raw.githubusercontent.com/WillAbides/bindown-templates/main/bindown.yml#goreleaser:
+    homepage: https://github.com/goreleaser/goreleaser
+    description: Deliver Go binaries as fast and easily as possible
+    url: https://github.com/goreleaser/goreleaser/releases/download/v{{.version}}/goreleaser_{{.os}}_{{.arch}}{{.urlSuffix}}
+    archive_path: goreleaser{{.archivePathSuffix}}
+    bin: goreleaser
+    vars:
+      archivePathSuffix: ""
+      urlSuffix: .tar.gz
+    required_vars:
+    - version
+    overrides:
+    - matcher:
+        os:
+        - windows
+      dependency:
+        vars:
+          archivePathSuffix: .exe
+          urlSuffix: .zip
+        substitutions:
+          arch:
+            "386": i386
+            amd64: x86_64
+          os:
+            windows: Windows
+    substitutions:
+      arch:
+        "386": i386
+        amd64: x86_64
+      os:
+        darwin: Darwin
+        linux: Linux
+    systems:
+    - darwin/amd64
+    - darwin/arm64
+    - linux/386
+    - linux/amd64
+    - linux/arm64
+    - linux/ppc64
+    - windows/386
+    - windows/amd64
+    - windows/arm64
+url_checksums:
+  https://github.com/goreleaser/goreleaser/releases/download/v1.18.2/goreleaser_Darwin_arm64.tar.gz: 7eec9f4d0b86b2c9c9f6af1770a11315998bd4d4617633b0a73eeb036e97393e
+  https://github.com/goreleaser/goreleaser/releases/download/v1.18.2/goreleaser_Darwin_x86_64.tar.gz: 95338eed333347152e23837b68a8c6ce0c62b9f5abb68bd5b4b08178766400b9
+  https://github.com/goreleaser/goreleaser/releases/download/v1.18.2/goreleaser_Linux_x86_64.tar.gz: 811e0c63e347f78f3c8612a19ca8eeb564eb45f0265ce3f38aec39c8fdbcfa10
+  https://github.com/goreleaser/goreleaser/releases/download/v1.18.2/goreleaser_Windows_x86_64.zip: 4b67f9a0159dc4f6a19fdea46eda506d58efe9e9d01aebc6ee39c9e9c14f9715

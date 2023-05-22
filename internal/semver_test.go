@@ -3,59 +3,69 @@ package internal
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/Masterminds/semver/v3"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSemVerString(t *testing.T) {
-	assert := assert.New(t)
-	test := func(input SemVer, expected string) {
-		actual := input.String()
-		assert.Equal(expected, actual)
+	for _, s := range []string{
+		"0.0.0",
+		"v0.0.0",
+		"1.2.3",
+		"0.0.0-rc.1",
+		"0.0.0-alpha-version.1",
+		"0.0.0+foo.bar",
+		"v1.2.3-rc.1+foo.bar",
+	} {
+		t.Run(s, func(t *testing.T) {
+			require.Equal(t, s, SemVerParse(s).String())
+		})
 	}
-
-	test(SemVer{}, "0.0.0")
-	test(SemVer{Prefix: "v"}, "v0.0.0")
-	test(SemVer{Major: 1, Minor: 2, Patch: 3}, "1.2.3")
-	test(SemVer{Prerelease: []string{"rc", "1"}}, "0.0.0-rc.1")
-	test(SemVer{Prerelease: []string{"alpha-version", "1"}}, "0.0.0-alpha-version.1")
-	test(SemVer{BuildMetadata: []string{"foo", "bar"}}, "0.0.0+foo.bar")
-	test(SemVer{Prefix: "v", Major: 1, Minor: 2, Patch: 3, Prerelease: []string{"rc", "1"}, BuildMetadata: []string{"foo", "bar"}}, "v1.2.3-rc.1+foo.bar")
 }
 
 func TestSemVerParse(t *testing.T) {
-	assert := assert.New(t)
 	test := func(input string, expected *SemVer) {
+		t.Helper()
 		actual := SemVerParse(input)
-		assert.Equal(expected, actual)
+		require.Equal(t, expected, actual)
 	}
 
-	test("0.0.0", &SemVer{})
-	test("v0.0.0", &SemVer{Prefix: "v"})
-	test("1.2.3", &SemVer{Major: 1, Minor: 2, Patch: 3})
-	test("0.0.0-rc.1", &SemVer{Prerelease: []string{"rc", "1"}})
-	test("0.0.0-alpha-version.1", &SemVer{Prerelease: []string{"alpha-version", "1"}})
-	test("0.0.0+foo.bar", &SemVer{BuildMetadata: []string{"foo", "bar"}})
-	test("v1.2.3-rc.1+foo.bar", &SemVer{Prefix: "v", Major: 1, Minor: 2, Patch: 3, Prerelease: []string{"rc", "1"}, BuildMetadata: []string{"foo", "bar"}})
+	test("0.0.0", &SemVer{Version: *mustMMNewVersion(t, "0.0.0")})
+	test("v0.0.0", &SemVer{Prefix: "v", Version: *mustMMNewVersion(t, "0.0.0")})
+	test("1.2.3", &SemVer{Version: *mustMMNewVersion(t, "1.2.3")})
+	test("0.0.0-rc.1", &SemVer{Version: *mustMMNewVersion(t, "0.0.0-rc.1")})
+	test("0.0.0-alpha-version.1", &SemVer{Version: *mustMMNewVersion(t, "0.0.0-alpha-version.1")})
+	test("0.0.0+foo.bar", &SemVer{Version: *mustMMNewVersion(t, "0.0.0+foo.bar")})
+	test("v1.2.3-rc.1+foo.bar", &SemVer{Prefix: "v", Version: *mustMMNewVersion(t, "1.2.3-rc.1+foo.bar")})
 	test("invalid", nil)
 }
 
 func TestSemVerEqual(t *testing.T) {
-	assert := assert.New(t)
-	test := func(a SemVer, b SemVer, expected bool) {
-		actual := a.Equal(b)
-		assert.Equal(expected, actual)
+	test := func(a, b string, expected bool) {
+		t.Helper()
+		pa := *SemVerParse(a)
+		pb := *SemVerParse(b)
+		actual := pa.Equal(pb)
+		require.Equal(t, expected, actual)
 	}
 
-	test(SemVer{}, SemVer{}, true)
-	test(SemVer{Major: 1}, SemVer{Major: 2}, false)
-	test(SemVer{Minor: 1}, SemVer{Minor: 2}, false)
-	test(SemVer{Patch: 1}, SemVer{Patch: 2}, false)
-	test(SemVer{Prerelease: []string{"foo"}}, SemVer{Prerelease: []string{"foo"}}, true)
-	test(SemVer{Prerelease: []string{"foo"}}, SemVer{Prerelease: []string{"bar"}}, false)
-	test(SemVer{Prerelease: []string{"foo"}}, SemVer{}, false)
-	test(SemVer{}, SemVer{Prerelease: []string{"bar"}}, false)
-	test(SemVer{BuildMetadata: []string{"foo"}}, SemVer{BuildMetadata: []string{"foo"}}, true)
-	test(SemVer{BuildMetadata: []string{"foo"}}, SemVer{BuildMetadata: []string{"bar"}}, false)
-	test(SemVer{BuildMetadata: []string{"foo"}}, SemVer{}, false)
-	test(SemVer{}, SemVer{BuildMetadata: []string{"bar"}}, false)
+	test("0.0.0", "0.0.0", true)
+	test("1.0.0", "2.0.0", false)
+	test("0.1.0", "0.2.0", false)
+	test("0.0.1", "0.0.2", false)
+	test("0.0.0-foo", "0.0.0-foo", true)
+	test("0.0.0-foo", "0.0.0-bar", false)
+	test("0.0.0-foo", "0.0.0", false)
+	test("0.0.0", "0.0.0-bar", false)
+	test("0.0.0+foo", "0.0.0+foo", true)
+	test("0.0.0+foo", "0.0.0+bar", false)
+	test("0.0.0+foo", "0.0.0", false)
+	test("0.0.0", "0.0.0+bar", false)
+}
+
+func mustMMNewVersion(t *testing.T, s string) *semver.Version {
+	t.Helper()
+	v, err := semver.StrictNewVersion(s)
+	require.NoError(t, err)
+	return v
 }

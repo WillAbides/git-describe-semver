@@ -3,6 +3,7 @@ module github.com/willabides/git-describe-semver
 go 1.20
 
 require (
+	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/stretchr/testify v1.8.1
 )

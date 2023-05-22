@@ -2,86 +2,77 @@ package internal
 
 import (
 	"fmt"
-	"regexp"
-	"strconv"
+	"github.com/Masterminds/semver/v3"
 	"strings"
 )
 
 // SemVer ...
 type SemVer struct {
-	Prefix        string
-	Major         int
-	Minor         int
-	Patch         int
-	Prerelease    []string
-	BuildMetadata []string
+	Prefix string
+	semver.Version
 }
 
 // Equal ...
-func (v SemVer) Equal(v2 SemVer) bool {
-	return true &&
+func (v *SemVer) Equal(v2 SemVer) bool {
+	return v.Version.Equal(&v2.Version) &&
 		v.Prefix == v2.Prefix &&
-		v.Major == v2.Major &&
-		v.Minor == v2.Minor &&
-		v.Patch == v2.Patch &&
-		equalStringSlice(v.Prerelease, v2.Prerelease) &&
-		equalStringSlice(v.BuildMetadata, v2.BuildMetadata)
+		v.Metadata() == v2.Metadata()
 }
 
 // String ...
-func (v SemVer) String() string {
-	str := fmt.Sprintf("%s%d.%d.%d", v.Prefix, v.Major, v.Minor, v.Patch)
-	if len(v.Prerelease) > 0 {
-		str = str + "-" + strings.Join(v.Prerelease, ".")
-	}
-	if len(v.BuildMetadata) > 0 {
-		str = str + "+" + strings.Join(v.BuildMetadata, ".")
-	}
-	return str
+func (v *SemVer) String() string {
+	return fmt.Sprintf("%s%s", v.Prefix, v.Version.String())
 }
 
-var semVerRegexp = regexp.MustCompile(`^([A-Za-z]+)?(\d+)\.(\d+)\.(\d+)(?:-((?:[0-9A-Za-z-]+)(?:\.[0-9A-Za-z-]+)*))?(?:\+((?:[0-9A-Za-z-]+)(?:\.[0-9A-Za-z-]+)*))?$`)
+func (v *SemVer) SetPrerelease(prerelease string) error {
+	ver, err := v.Version.SetPrerelease(prerelease)
+	if err != nil {
+		return err
+	}
+	v.Version = ver
+	return nil
+}
+
+func (v *SemVer) SetMetadata(metadata string) error {
+	ver, err := v.Version.SetMetadata(metadata)
+	if err != nil {
+		return err
+	}
+	v.Version = ver
+	return nil
+}
+
+// NextPatch is like IncPatch but preserves the prefix and metadata
+func (v *SemVer) NextPatch() {
+	metadata := v.Metadata()
+	prerelease := v.Prerelease()
+	v.Version = v.Version.IncPatch()
+	err := v.SetMetadata(metadata)
+	if err != nil {
+		panic(err)
+	}
+	err = v.SetPrerelease(prerelease)
+	if err != nil {
+		panic(err)
+	}
+}
 
 // SemVerParse ...
 func SemVerParse(str string) *SemVer {
-	match := semVerRegexp.FindStringSubmatch(str)
-	if len(match) == 0 {
+	// prefix cannot contain a digit so the end of the prefix is the first digit
+	prefixEnd := strings.IndexFunc(str, func(r rune) bool {
+		return r >= '0' && r <= '9'
+	})
+	if prefixEnd == -1 {
+		return nil
+	}
+	sv, err := semver.StrictNewVersion(str[prefixEnd:])
+	if err != nil {
 		return nil
 	}
 
-	prefix := match[1]
-	major, _ := strconv.Atoi(match[2])
-	minor, _ := strconv.Atoi(match[3])
-	patch, _ := strconv.Atoi(match[4])
-	prerelease := stringToSlice(match[5], ".")
-	buildMetadata := stringToSlice(match[6], ".")
-
 	return &SemVer{
-		Prefix:        prefix,
-		Major:         major,
-		Minor:         minor,
-		Patch:         patch,
-		Prerelease:    prerelease,
-		BuildMetadata: buildMetadata,
+		Prefix:  str[:prefixEnd],
+		Version: *sv,
 	}
-}
-
-func stringToSlice(s string, sep string) []string {
-	temp := strings.Split(s, sep)
-	if temp[0] == "" {
-		return []string(nil)
-	}
-	return temp
-}
-
-func equalStringSlice(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i, v := range a {
-		if v != b[i] {
-			return false
-		}
-	}
-	return true
 }

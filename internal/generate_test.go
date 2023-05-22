@@ -1,47 +1,54 @@
 package internal
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGenerateVersion(t *testing.T) {
 	now, _ := time.Parse(time.RFC822Z, "01 Jan 20 02:03 -0000")
-	assert := assert.New(t)
-	test := func(inputTagName string, inputCounter int, inputHeadHash string, inputOpts GenerateVersionOptions, expected string) {
-		actual, err := GenerateVersion(inputTagName, inputCounter, inputHeadHash, now, inputOpts)
-		if assert.NoError(err) {
-			assert.Equal(expected, *actual)
-		}
+	for _, td := range []struct {
+		inputTagName string
+		inputCounter int
+		inputOpts    GenerateVersionOptions
+		expected     string
+		err          bool
+	}{
+		{inputTagName: "0.0.0", inputOpts: GenerateVersionOptions{PrereleasePrefix: "dev"}, expected: "0.0.0"},
+		{inputTagName: "0.0.0", inputCounter: 1, inputOpts: GenerateVersionOptions{PrereleasePrefix: "dev"}, expected: "0.0.1-dev.1.gabc1234"},
+		{inputTagName: "0.0.0-rc1", inputCounter: 1, inputOpts: GenerateVersionOptions{PrereleasePrefix: "dev"}, expected: "0.0.0-rc1.dev.1.gabc1234"},
+		{inputTagName: "0.0.0-rc.1", inputCounter: 1, inputOpts: GenerateVersionOptions{PrereleasePrefix: "dev"}, expected: "0.0.0-rc.1.dev.1.gabc1234"},
+		{inputTagName: "0.0.0-rc.1+foobar", inputCounter: 1, inputOpts: GenerateVersionOptions{PrereleasePrefix: "dev"}, expected: "0.0.0-rc.1.dev.1.gabc1234+foobar"},
+		{inputTagName: "v0.0.0-rc.1+foobar", inputCounter: 1, inputOpts: GenerateVersionOptions{PrereleasePrefix: "dev"}, expected: "v0.0.0-rc.1.dev.1.gabc1234+foobar"},
+		{inputTagName: "", inputCounter: 1, inputOpts: GenerateVersionOptions{FallbackTagName: "0.0.0", PrereleasePrefix: "dev"}, expected: "0.0.0-dev.1.gabc1234"},
+		{inputTagName: "", inputCounter: 1, inputOpts: GenerateVersionOptions{FallbackTagName: "v0.0.0", PrereleasePrefix: "dev"}, expected: "v0.0.0-dev.1.gabc1234"},
+		{inputTagName: "v0.0.0", inputCounter: 0, inputOpts: GenerateVersionOptions{PrereleaseSuffix: "SNAPSHOT", PrereleasePrefix: "dev"}, expected: "v0.0.0"},
+		{inputTagName: "v0.0.0", inputCounter: 1, inputOpts: GenerateVersionOptions{PrereleaseSuffix: "SNAPSHOT", PrereleasePrefix: "dev"}, expected: "v0.0.1-dev.1.gabc1234-SNAPSHOT"},
+		{inputTagName: "v0.0.0", inputCounter: 0, inputOpts: GenerateVersionOptions{DropTagNamePrefix: true, PrereleasePrefix: "dev"}, expected: "0.0.0"},
+		{inputTagName: "v0.0.0-rc.1", inputCounter: 1, inputOpts: GenerateVersionOptions{DropTagNamePrefix: true, PrereleasePrefix: "dev"}, expected: "0.0.0-rc.1.dev.1.gabc1234"},
+		{inputTagName: "v0.0.0-rc.1+foobar", inputCounter: 1, inputOpts: GenerateVersionOptions{DropTagNamePrefix: true, PrereleasePrefix: "dev"}, expected: "0.0.0-rc.1.dev.1.gabc1234+foobar"},
+		{inputTagName: "", inputCounter: 1, inputOpts: GenerateVersionOptions{FallbackTagName: "v0.0.0", DropTagNamePrefix: true, PrereleasePrefix: "dev"}, expected: "0.0.0-dev.1.gabc1234"},
+		{inputTagName: "0.0.0", inputCounter: 0, inputOpts: GenerateVersionOptions{PrereleasePrefix: "custom"}, expected: "0.0.0"},
+		{inputTagName: "0.0.0", inputCounter: 1, inputOpts: GenerateVersionOptions{PrereleasePrefix: "custom"}, expected: "0.0.1-custom.1.gabc1234"},
+		{inputTagName: "0.0.0", inputCounter: 0, inputOpts: GenerateVersionOptions{PrereleasePrefix: "dev", PrereleaseTimestamped: true}, expected: "0.0.0"},
+		{inputTagName: "0.0.0", inputCounter: 1, inputOpts: GenerateVersionOptions{PrereleasePrefix: "dev", PrereleaseTimestamped: false}, expected: "0.0.1-dev.1.gabc1234"},
+		{inputTagName: "0.0.0", inputCounter: 1, inputOpts: GenerateVersionOptions{PrereleasePrefix: "dev", PrereleaseTimestamped: true}, expected: "0.0.1-dev.1577844180.gabc1234"},
+		{inputTagName: "", inputCounter: 1, inputOpts: GenerateVersionOptions{FallbackTagName: "0.0.0", PrereleasePrefix: "dev", PrereleaseTimestamped: true}, expected: "0.0.0-dev.1577844180.gabc1234"},
+		{inputTagName: "0.0.0", inputCounter: 0, inputOpts: GenerateVersionOptions{PrereleasePrefix: "dev", PrereleaseTimestamped: true}, expected: "0.0.0"},
+		{inputTagName: "0.0.0", inputCounter: 1, inputOpts: GenerateVersionOptions{PrereleasePrefix: "dev", PrereleaseTimestamped: true}, expected: "0.0.1-dev.1577844180.gabc1234"},
+		{inputTagName: "", inputCounter: 1, inputOpts: GenerateVersionOptions{PrereleasePrefix: "dev"}, err: true},
+	} {
+		t.Run(fmt.Sprintf("%s-%d", td.inputTagName, td.inputCounter), func(t *testing.T) {
+			actual, err := GenerateVersion(td.inputTagName, td.inputCounter, "abc1234", now, td.inputOpts)
+			if td.err {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, td.expected, *actual)
+			}
+		})
 	}
-
-	test("0.0.0", 0, "abc1234", GenerateVersionOptions{PrereleasePrefix: "dev"}, "0.0.0")
-	test("0.0.0", 1, "abc1234", GenerateVersionOptions{PrereleasePrefix: "dev"}, "0.0.1-dev.1.gabc1234")
-	test("0.0.0-rc1", 1, "abc1234", GenerateVersionOptions{PrereleasePrefix: "dev"}, "0.0.0-rc1.dev.1.gabc1234")
-	test("0.0.0-rc.1", 1, "abc1234", GenerateVersionOptions{PrereleasePrefix: "dev"}, "0.0.0-rc.1.dev.1.gabc1234")
-	test("0.0.0-rc.1+foobar", 1, "abc1234", GenerateVersionOptions{PrereleasePrefix: "dev"}, "0.0.0-rc.1.dev.1.gabc1234+foobar")
-	test("v0.0.0-rc.1+foobar", 1, "abc1234", GenerateVersionOptions{PrereleasePrefix: "dev"}, "v0.0.0-rc.1.dev.1.gabc1234+foobar")
-
-	test("", 1, "abc1234", GenerateVersionOptions{FallbackTagName: "0.0.0", PrereleasePrefix: "dev"}, "0.0.0-dev.1.gabc1234")
-	test("", 1, "abc1234", GenerateVersionOptions{FallbackTagName: "v0.0.0", PrereleasePrefix: "dev"}, "v0.0.0-dev.1.gabc1234")
-
-	test("v0.0.0", 0, "abc1234", GenerateVersionOptions{PrereleaseSuffix: "SNAPSHOT", PrereleasePrefix: "dev"}, "v0.0.0")
-	test("v0.0.0", 1, "abc1234", GenerateVersionOptions{PrereleaseSuffix: "SNAPSHOT", PrereleasePrefix: "dev"}, "v0.0.1-dev.1.gabc1234-SNAPSHOT")
-
-	test("v0.0.0", 0, "abc1234", GenerateVersionOptions{DropTagNamePrefix: true, PrereleasePrefix: "dev"}, "0.0.0")
-	test("v0.0.0-rc.1", 1, "abc1234", GenerateVersionOptions{DropTagNamePrefix: true, PrereleasePrefix: "dev"}, "0.0.0-rc.1.dev.1.gabc1234")
-	test("v0.0.0-rc.1+foobar", 1, "abc1234", GenerateVersionOptions{DropTagNamePrefix: true, PrereleasePrefix: "dev"}, "0.0.0-rc.1.dev.1.gabc1234+foobar")
-	test("", 1, "abc1234", GenerateVersionOptions{FallbackTagName: "v0.0.0", DropTagNamePrefix: true, PrereleasePrefix: "dev"}, "0.0.0-dev.1.gabc1234")
-
-	test("0.0.0", 0, "abc1234", GenerateVersionOptions{PrereleasePrefix: "custom"}, "0.0.0")
-	test("0.0.0", 1, "abc1234", GenerateVersionOptions{PrereleasePrefix: "custom"}, "0.0.1-custom.1.gabc1234")
-
-	test("0.0.0", 0, "abc1234", GenerateVersionOptions{PrereleasePrefix: "dev", PrereleaseTimestamped: true}, "0.0.0")
-	test("0.0.0", 1, "abc1234", GenerateVersionOptions{PrereleasePrefix: "dev", PrereleaseTimestamped: false}, "0.0.1-dev.1.gabc1234")
-	test("0.0.0", 1, "abc1234", GenerateVersionOptions{PrereleasePrefix: "dev", PrereleaseTimestamped: true}, "0.0.1-dev.1577844180.gabc1234")
-
-	_, err := GenerateVersion("", 1, "abc1234", now, GenerateVersionOptions{PrereleasePrefix: "dev"})
-	assert.Error(err)
 }

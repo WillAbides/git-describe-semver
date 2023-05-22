@@ -22,7 +22,9 @@ jobs:
             ${{ steps.setup-go.outputs.GOCACHE }}
             ${{ steps.setup-go.outputs.GOMODCACHE }}
           key: ${{ runner.os }}-goreleaser-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-goreleaser-
+          restore-keys: |
+            ${{ runner.os }}-goreleaser-
+            ${{ runner.os }}-go-
       - run: script/bindown install goreleaser
       - run: bin/goreleaser release
         env:

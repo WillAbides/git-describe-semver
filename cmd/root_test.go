@@ -4,10 +4,10 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/choffmeister/git-describe-semver/internal"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/assert"
+	"github.com/willabides/git-describe-semver/internal"
 )
 
 func TestRun(t *testing.T) {

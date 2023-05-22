@@ -2,18 +2,26 @@ name: test
 on:
   push:
     branches:
-    - "*"
+      - "*"
   pull_request:
     branches:
-    - main
+      - main
 env:
   GO111MODULE: on
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/setup-go@v2
-      with:
-        go-version: 1.20.x
-    - uses: actions/checkout@v3
-    - run: go test ./...
+      - uses: actions/checkout@v3
+      - uses: WillAbides/setup-go-faster@v1
+        id: setup-go
+        with:
+          go-version: '1.20.x'
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ${{ steps.setup-go.outputs.GOCACHE }}
+            ${{ steps.setup-go.outputs.GOMODCACHE }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-go-
+      - run: go test ./...

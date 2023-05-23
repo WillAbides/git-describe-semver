@@ -1,8 +1,9 @@
 package internal
 
 import (
-	"github.com/willabides/git-describe-semver/internal/testutil"
 	"testing"
+
+	"github.com/willabides/git-describe-semver/internal/testutil"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -16,7 +17,7 @@ func TestGitTagMap(t *testing.T) {
 
 	tags, err := GitTagMap(*repo)
 	require.NoError(t, err)
-	require.Equal(t, map[string]string{}, *tags)
+	require.Equal(t, map[string]string{}, tags)
 
 	commit1 := testutil.CreateEmptyCommit(t, repo, "first", nil)
 	tag1 := testutil.MustCreateTag(t, repo, "v1.0.0", commit1)
@@ -24,7 +25,7 @@ func TestGitTagMap(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, map[string]string{
 		tag1.Hash().String(): "v1.0.0",
-	}, *tags)
+	}, tags)
 
 	commit2 := testutil.CreateEmptyCommit(t, repo, "second", nil)
 	tag2 := testutil.MustCreateAnnotatedTag(t, repo, "v2.0.0", "Version 2.0.0", commit2)
@@ -34,7 +35,7 @@ func TestGitTagMap(t *testing.T) {
 	require.Equal(t, map[string]string{
 		commit1.String(): "v1.0.0",
 		commit2.String(): "v2.0.0",
-	}, *tags)
+	}, tags)
 
 	commit3 := testutil.CreateEmptyCommit(t, repo, "third", nil)
 	tag3 := testutil.MustCreateAnnotatedTag(t, repo, "fum", "Not a semver version tag", commit3)
@@ -44,7 +45,7 @@ func TestGitTagMap(t *testing.T) {
 	require.Equal(t, map[string]string{
 		commit1.String(): "v1.0.0",
 		commit2.String(): "v2.0.0",
-	}, *tags)
+	}, tags)
 }
 
 func TestGitDescribe(t *testing.T) {

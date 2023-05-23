@@ -13,7 +13,7 @@ import (
 	"github.com/willabides/git-describe-semver/internal"
 )
 
-func run(dir string, opts internal.GenerateVersionOptions) (*string, error) {
+func run(dir string, opts *internal.GenerateVersionOptions) (*string, error) {
 	repo, err := git.PlainOpen(dir)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open git repository: %v", err)
@@ -54,7 +54,7 @@ func Execute(version FullVersion) error {
 		PrereleaseTimestamped: *prereleaseTimestampedFlag,
 		Format:                *formatFlag,
 	}
-	result, err := run(*dirFlag, opts)
+	result, err := run(*dirFlag, &opts)
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,10 @@ func Execute(version FullVersion) error {
 	if err != nil {
 		return err
 	}
-	defer output.Close()
+	err = output.Close()
+	if err != nil {
+		return err
+	}
 	fmt.Fprintf(output, "%s\n", *result)
 
 	return nil

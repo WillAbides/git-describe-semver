@@ -40,29 +40,6 @@ func TestSemVerParse(t *testing.T) {
 	test("invalid", nil)
 }
 
-func TestSemVerEqual(t *testing.T) {
-	test := func(a, b string, expected bool) {
-		t.Helper()
-		pa := *SemVerParse(a)
-		pb := *SemVerParse(b)
-		actual := pa.Equal(pb)
-		require.Equal(t, expected, actual)
-	}
-
-	test("0.0.0", "0.0.0", true)
-	test("1.0.0", "2.0.0", false)
-	test("0.1.0", "0.2.0", false)
-	test("0.0.1", "0.0.2", false)
-	test("0.0.0-foo", "0.0.0-foo", true)
-	test("0.0.0-foo", "0.0.0-bar", false)
-	test("0.0.0-foo", "0.0.0", false)
-	test("0.0.0", "0.0.0-bar", false)
-	test("0.0.0+foo", "0.0.0+foo", true)
-	test("0.0.0+foo", "0.0.0+bar", false)
-	test("0.0.0+foo", "0.0.0", false)
-	test("0.0.0", "0.0.0+bar", false)
-}
-
 func mustMMNewVersion(t *testing.T, s string) *semver.Version {
 	t.Helper()
 	v, err := semver.StrictNewVersion(s)

@@ -7,7 +7,6 @@ import (
 	"time"
 )
 
-// GenerateVersionOptions ...
 type GenerateVersionOptions struct {
 	FallbackTagName       string
 	DropTagNamePrefix     bool
@@ -17,8 +16,7 @@ type GenerateVersionOptions struct {
 	Format                string
 }
 
-// GenerateVersion ...
-func GenerateVersion(tagName string, counter int, headHash string, timestamp time.Time, opts GenerateVersionOptions) (*string, error) {
+func GenerateVersion(tagName string, counter int, headHash string, timestamp time.Time, opts *GenerateVersionOptions) (*string, error) {
 	devPrerelease := strings.Join([]string{opts.PrereleasePrefix, strconv.Itoa(counter), "g" + (headHash)[0:7]}, ".")
 	if opts.PrereleaseTimestamped {
 		timestampUTC := timestamp.UTC()

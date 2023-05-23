@@ -1,11 +1,12 @@
 package testutil
 
 import (
+	"testing"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func MustCreateTag(t *testing.T, repo *git.Repository, name string, target plumbing.Hash) *plumbing.Reference {

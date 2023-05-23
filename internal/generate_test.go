@@ -9,7 +9,8 @@ import (
 )
 
 func TestGenerateVersion(t *testing.T) {
-	now, _ := time.Parse(time.RFC822Z, "01 Jan 20 02:03 -0000")
+	now, err := time.Parse(time.RFC822Z, "01 Jan 20 02:03 -0000")
+	require.NoError(t, err)
 	for _, td := range []struct {
 		inputTagName string
 		inputCounter int
@@ -42,7 +43,7 @@ func TestGenerateVersion(t *testing.T) {
 		{inputTagName: "", inputCounter: 1, inputOpts: GenerateVersionOptions{PrereleasePrefix: "dev"}, err: true},
 	} {
 		t.Run(fmt.Sprintf("%s-%d", td.inputTagName, td.inputCounter), func(t *testing.T) {
-			actual, err := GenerateVersion(td.inputTagName, td.inputCounter, "abc1234", now, td.inputOpts)
+			actual, err := GenerateVersion(td.inputTagName, td.inputCounter, "abc1234", now, &td.inputOpts)
 			if td.err {
 				require.Error(t, err)
 			} else {

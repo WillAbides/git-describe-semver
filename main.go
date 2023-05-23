@@ -7,7 +7,6 @@ import (
 	"github.com/willabides/git-describe-semver/cmd"
 )
 
-// nolint: gochecknoglobals
 var (
 	version = "dev"
 	commit  = ""

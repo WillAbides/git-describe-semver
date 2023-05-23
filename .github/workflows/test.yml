@@ -24,4 +24,6 @@ jobs:
             ${{ steps.setup-go.outputs.GOMODCACHE }}
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-go-
-      - run: go test ./...
+      - run: script/test
+      - run: script/lint
+      - run: script/generate --check
